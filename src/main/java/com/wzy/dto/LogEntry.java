@@ -9,8 +9,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class LogEntry {
     private String memberId;
+
+    private String deal;
+
+
     private Integer overallTime;
 
 
+    public void setValue(String name,String value){
 
+    }
 }

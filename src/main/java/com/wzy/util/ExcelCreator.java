@@ -11,21 +11,27 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 @Log4j2
 public class ExcelCreator {
 
-    private static final LogEntry headEntry = new LogEntry("会员", 2024);
+    //private final LogEntry headEntry = new LogEntry("会员", 2024);
 
+    private HashMap<String, HashMap<String, String>> map = new HashMap<>();
+
+    public void clearMap() {
+        map.clear();
+    }
 
     /**
      * 按配置的文件名格式，依次读取多个交易日的结算文件日志
      * * @param tradeDate 日期
      */
-    public void writeDailyData(FileConfig config, String tradeDate) {
+    public void writeDailyData(FileConfig config, String tradeDate) throws ParseException {
+        String logDate = new SimpleDateFormat("yyyy-MM-dd").format(new SimpleDateFormat("yyyyMMdd").parse(tradeDate));
         String fileName = config.getFileName();
         fileName = fileName.replaceFirst("\\d{8}", tradeDate);
         String logFilePath1 = config.getFilePath1() + fileName;
@@ -33,16 +39,18 @@ public class ExcelCreator {
         String logFilePath3 = config.getFilePath3() + fileName;
         String tmpPath = config.getResultFilePath() + "temp.xlsx";
         String resultPath = config.getResultFilePath() + "result.xlsx";
-        headEntry.setOverallTime(Integer.valueOf(tradeDate));
-        List<LogEntry> list = new ArrayList<>();
-        list.add(headEntry);
+        //headEntry.setOverallTime(Integer.valueOf(tradeDate));
         LogEntry totalEntry = new LogEntry();
         totalEntry.setMemberId("总计");
-        parseLogFile(logFilePath1, list, totalEntry);
-        parseLogFile(logFilePath2, list, totalEntry);
-        parseLogFile(logFilePath3, list, totalEntry);
-        list.add(totalEntry);
-        list.sort(new CustomComparator());
+        parseLogFile(logFilePath1, map, totalEntry);
+        parseLogFile(logFilePath2, map, totalEntry);
+        parseLogFile(logFilePath3, map, totalEntry);
+
+        ArrayList<HashMap<String, String>> list = new ArrayList<>(map.values());
+        map.clear();
+        //list.add(headEntry);
+        //list.add(totalEntry);
+        //list.sort(new CustomComparator());
 
         // 使用EasyExcel生成Excel文件
         //ExcelWriter writer = EasyExcel.write(excelFilePath).build();
@@ -53,7 +61,7 @@ public class ExcelCreator {
         }
     }
 
-    private void writeAppend(String tmpPath, String resultPath, WriteSheet sheet1, List<LogEntry> list) {
+    private void writeAppend(String tmpPath, String resultPath, WriteSheet sheet1, List list) {
         File tmp = new File(tmpPath);
         File result = new File(resultPath);
         ExcelWriter writer;
@@ -76,7 +84,7 @@ public class ExcelCreator {
     }
 
 
-    private void parseLogFile(String logFilePath, List<LogEntry> list, LogEntry totalEntry) {
+    private void parseLogFile(String logFilePath, HashMap<String, HashMap<String, String>> list, LogEntry totalEntry) {
         // 在这里读取a.log文件并解析信息
         // 读取日志文件并提取数据
 
