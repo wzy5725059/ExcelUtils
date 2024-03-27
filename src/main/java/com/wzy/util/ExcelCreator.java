@@ -3,8 +3,10 @@ package com.wzy.util;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.write.metadata.WriteSheet;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wzy.dto.FileConfig;
-import com.wzy.dto.LogEntry;
+import com.wzy.dto.TableFormat;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.BufferedReader;
@@ -14,6 +16,7 @@ import java.io.FileReader;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Log4j2
 public class ExcelCreator {
@@ -30,8 +33,12 @@ public class ExcelCreator {
      * 按配置的文件名格式，依次读取多个交易日的结算文件日志
      * * @param tradeDate 日期
      */
-    public void writeDailyData(FileConfig config, String tradeDate) throws ParseException {
-        String logDate = new SimpleDateFormat("yyyy-MM-dd").format(new SimpleDateFormat("yyyyMMdd").parse(tradeDate));
+    public void writeDailyData(FileConfig config, String tradeDate) {
+        try {
+            String logDate = new SimpleDateFormat("yyyy-MM-dd").format(new SimpleDateFormat("yyyyMMdd").parse(tradeDate));
+        } catch (ParseException e) {
+            log.error("logDate parse error");
+        }
         String fileName = config.getFileName();
         fileName = fileName.replaceFirst("\\d{8}", tradeDate);
         String logFilePath1 = config.getFilePath1() + fileName;
@@ -40,34 +47,45 @@ public class ExcelCreator {
         String tmpPath = config.getResultFilePath() + "temp.xlsx";
         String resultPath = config.getResultFilePath() + "result.xlsx";
         //headEntry.setOverallTime(Integer.valueOf(tradeDate));
-        LogEntry totalEntry = new LogEntry();
+        TableFormat totalEntry = new TableFormat();
         totalEntry.setMemberId("总计");
         parseLogFile(logFilePath1, map, totalEntry);
         parseLogFile(logFilePath2, map, totalEntry);
         parseLogFile(logFilePath3, map, totalEntry);
 
         ArrayList<HashMap<String, String>> list = new ArrayList<>(map.values());
+        List<TableFormat> entryList = list.stream().map(x -> {
+            ObjectMapper objectMapper = new ObjectMapper();
+            TableFormat logEntry = null;
+            try {
+                String s = objectMapper.writeValueAsString(x);
+                logEntry = objectMapper.readValue(s, TableFormat.class);
+            } catch (JsonProcessingException e) {
+                log.error("json parse error {}", x);
+
+            }
+            return logEntry;
+        }).collect(Collectors.toList());
         map.clear();
-        //list.add(headEntry);
-        //list.add(totalEntry);
-        //list.sort(new CustomComparator());
+        entryList.sort(new CustomComparator());
 
         // 使用EasyExcel生成Excel文件
         //ExcelWriter writer = EasyExcel.write(excelFilePath).build();
-        if (list.size() > 100) {
-            WriteSheet sheet1 = EasyExcel.writerSheet(tradeDate).build();
-            writeAppend(tmpPath, resultPath, sheet1, list);
+        if (entryList.size() > 1) {
+            WriteSheet sheet1 = EasyExcel.writerSheet(tradeDate).head(TableFormat.class).build();
+
+            writeAppend(tmpPath, resultPath, sheet1, entryList);
             log.info("数据写入成功：" + tradeDate);
         }
     }
 
-    private void writeAppend(String tmpPath, String resultPath, WriteSheet sheet1, List list) {
+    private void writeAppend(String tmpPath, String resultPath, WriteSheet sheet1, List<TableFormat> list) {
         File tmp = new File(tmpPath);
         File result = new File(resultPath);
         ExcelWriter writer;
         if (result.exists()) {
             // 第二次按照原有格式，不需要表头，追加写入
-            writer = EasyExcel.write().needHead(false).
+            writer = EasyExcel.write().
                     withTemplate(result).file(tmp).build();
             log.info("追加Excel文件：" + result);
         } else {
@@ -76,6 +94,7 @@ public class ExcelCreator {
             log.info("新建文件Excel文件：" + result);
         }
         writer.write(list, sheet1);
+
         writer.finish();
         if (tmp.exists()) {
             result.delete();
@@ -84,7 +103,7 @@ public class ExcelCreator {
     }
 
 
-    private void parseLogFile(String logFilePath, HashMap<String, HashMap<String, String>> list, LogEntry totalEntry) {
+    private void parseLogFile(String logFilePath, HashMap<String, HashMap<String, String>> list, TableFormat totalEntry) {
         // 在这里读取a.log文件并解析信息
         // 读取日志文件并提取数据
 
@@ -100,10 +119,10 @@ public class ExcelCreator {
         }
     }
 
-    static class CustomComparator implements Comparator<LogEntry> {
+    static class CustomComparator implements Comparator<TableFormat> {
 
         @Override
-        public int compare(LogEntry p1, LogEntry p2) {
+        public int compare(TableFormat p1, TableFormat p2) {
 
             // 如果一个元素的name是"会员"，则"会员"排在前面
             String memberId1 = p1.getMemberId();
