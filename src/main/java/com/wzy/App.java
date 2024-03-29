@@ -19,7 +19,7 @@ public class App {
         Integer startDate = config.getStartDate();
         Integer endDate = config.getEndDate();
         if (startDate != null && endDate != null) {
-            for (int i = startDate; i < endDate; i++) {
+            for (int i = startDate; i <= endDate; i++) {
                 excelCreator.writeDailyData(config, String.valueOf(i));
             }
         } else {

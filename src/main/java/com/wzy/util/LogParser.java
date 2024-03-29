@@ -73,7 +73,7 @@ public class LogParser {
             Matcher matcher5 = num.matcher(txt2);
             if (matcher5.find()) {
                 String times = matcher5.group();
-                memMap.put(txt4, (Integer.parseInt(times) / 1000) + "");
+                memMap.put(txt4, (Double.parseDouble(times) / 1000) + "");
             }
 
         }
@@ -82,7 +82,7 @@ public class LogParser {
         if (matcher3.find()) {
             Matcher matcher5 = num.matcher(matcher3.group());
             if (matcher5.find()) {
-                int time = Integer.parseInt(matcher5.group()) / 1000;
+                Double time = Double.parseDouble(matcher5.group()) / 1000;
                 HashMap<String, String> timeMap = new HashMap<>();
                 timeMap.put(overallTime, String.valueOf(time));
                 timeMap.put(memberString, "总计");

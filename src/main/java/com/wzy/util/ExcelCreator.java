@@ -35,8 +35,9 @@ public class ExcelCreator {
      * * @param tradeDate 日期
      */
     public void writeDailyData(FileConfig config, String tradeDate) {
+        String logDate = null;
         try {
-            String logDate = new SimpleDateFormat("yyyy-MM-dd").format(new SimpleDateFormat("yyyyMMdd").parse(tradeDate));
+            logDate = new SimpleDateFormat("yyyy-MM-dd").format(new SimpleDateFormat("yyyyMMdd").parse(tradeDate));
         } catch (ParseException e) {
             log.error("logDate parse error");
         }
@@ -48,9 +49,9 @@ public class ExcelCreator {
         String tmpPath = config.getResultFilePath() + "temp.xlsx";
         String resultPath = config.getResultFilePath() + "result.xlsx";
         //headEntry.setOverallTime(Integer.valueOf(tradeDate));
-        parseLogFile(logFilePath1, map);
-        parseLogFile(logFilePath2, map);
-        parseLogFile(logFilePath3, map);
+        parseLogFile(logFilePath1, map, logDate);
+        parseLogFile(logFilePath2, map, logDate);
+        parseLogFile(logFilePath3, map, logDate);
 
         ArrayList<HashMap<String, String>> list = new ArrayList<>(map.values());
         List<TableFormat> entryList = list.stream().map(x -> {
@@ -102,13 +103,16 @@ public class ExcelCreator {
     }
 
 
-    private void parseLogFile(String logFilePath, HashMap<String, HashMap<String, String>> list) {
+    private void parseLogFile(String logFilePath, HashMap<String, HashMap<String, String>> list, String logDate) {
         // 在这里读取a.log文件并解析信息
         // 读取日志文件并提取数据
 
         try (BufferedReader br = new BufferedReader(new FileReader(logFilePath))) {
             String line;
             while ((line = br.readLine()) != null) {
+                if (!line.contains(logDate)) {
+                    continue;
+                }
                 LogParser.formatText(line, list);
             }
         } catch (FileNotFoundException e) {
@@ -123,22 +127,19 @@ public class ExcelCreator {
         @Override
         public int compare(TableFormat p1, TableFormat p2) {
 
-            // 如果一个元素的name是"会员"，则"会员"排在前面
             String memberId1 = p1.getMemberId();
             String memberId2 = p2.getMemberId();
-            if ("会员".equals(memberId1)) {
-                return -1;
-            }
             // 如果一个元素的name是"总计"，则"总计"排在最后
-            if ("总计".equals(memberId1)|| StringUtils.isEmpty(memberId1)) {
+            if ("总计".equals(memberId1) || StringUtils.isEmpty(memberId1)) {
                 return 1;
+            }
+            if ("总计".equals(memberId2) || StringUtils.isEmpty(memberId2)) {
+                return -1;
             }
 
             // 如果两个元素的name都是数字，则按照数字大小排序
-            if (memberId1.matches("\\d+") && memberId2.matches("\\d+")) {
-                return Integer.compare(Integer.parseInt(memberId1), Integer.parseInt(memberId2));
-            }
-            return memberId1.compareTo(memberId1);
+            return Integer.compare(Integer.parseInt(memberId1), Integer.parseInt(memberId2));
+
         }
     }
 }

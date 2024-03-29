@@ -118,17 +118,17 @@ public class TableFormat {
     @JsonProperty("每日充抵资金变动明细表")
     private String S43;
 
-    @ExcelProperty("_每日充抵资金查询")
-    @JsonProperty("_每日充抵资金查询")
+    @ExcelProperty("每日充抵资金查询")
+    @JsonProperty("每日充抵资金查询")
     private String S44;
 
-    @ExcelProperty("交易编码保证金表")
+/*    @ExcelProperty("交易编码保证金表")
     @JsonProperty("交易编码保证金表")
-    private String S45;
+    private String S45;*/
 
     @JsonProperty("整体时间")
     @ExcelProperty("整体时间")
-    private Integer overallTime;
+    private String overallTime;
 
 
 }
