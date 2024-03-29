@@ -1,6 +1,5 @@
 package com.wzy.util;
 
-import com.wzy.dto.TableFormat;
 import lombok.extern.log4j.Log4j2;
 
 import java.util.HashMap;
@@ -24,12 +23,15 @@ public class LogParser {
 
     final static Pattern totalTime = Pattern.compile("会服结算数据打包文件生成完成！整体运行时间：\\d+");
 
-    public static void formatText(String line, HashMap<String, HashMap<String, String>> listMap, TableFormat totalEntry) {
+    final static String overallTime = "整体时间";
+
+    final static String memberString = "会员";
+
+    public static void formatText(String line, HashMap<String, HashMap<String, String>> listMap) {
         log.info(line);
         Matcher matcher = member.matcher(line);
         Matcher matcher1 = time2.matcher(line);
         Matcher matcher2 = time.matcher(line);
-        Matcher matcher3 = totalTime.matcher(line);
         if (matcher.find()) {
             // txt1提取值为会员[011]
             String txt1 = matcher.group();
@@ -43,7 +45,7 @@ public class LogParser {
             HashMap<String, String> memMap = listMap.get(memberId);
             if (memMap == null) {
                 memMap = new HashMap<>();
-                memMap.put("会员", memberId);
+                memMap.put(memberString, memberId);
                 listMap.put(memberId, memMap);
             }
 
@@ -63,7 +65,7 @@ public class LogParser {
             } else if (matcher2.find()) {
                 // txt2提取值为整体时间：80747
                 txt2 = matcher2.group();
-                txt4 = "整体时间";
+                txt4 = overallTime;
 
             } else {
                 return;
@@ -75,15 +77,16 @@ public class LogParser {
             }
 
         }
+        // 获取整体打包时间
+        Matcher matcher3 = totalTime.matcher(line);
         if (matcher3.find()) {
-
             Matcher matcher5 = num.matcher(matcher3.group());
             if (matcher5.find()) {
                 int time = Integer.parseInt(matcher5.group()) / 1000;
-                Integer originTime = totalEntry.getOverallTime();
-                if (null == originTime || time > originTime) {
-                    totalEntry.setOverallTime(time);
-                }
+                HashMap<String, String> timeMap = new HashMap<>();
+                timeMap.put(overallTime, String.valueOf(time));
+                timeMap.put(memberString, "总计");
+                listMap.put("99999", timeMap);
             }
         }
     }

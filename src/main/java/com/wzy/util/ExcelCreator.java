@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wzy.dto.FileConfig;
 import com.wzy.dto.TableFormat;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.util.StringUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -47,11 +48,9 @@ public class ExcelCreator {
         String tmpPath = config.getResultFilePath() + "temp.xlsx";
         String resultPath = config.getResultFilePath() + "result.xlsx";
         //headEntry.setOverallTime(Integer.valueOf(tradeDate));
-        TableFormat totalEntry = new TableFormat();
-        totalEntry.setMemberId("总计");
-        parseLogFile(logFilePath1, map, totalEntry);
-        parseLogFile(logFilePath2, map, totalEntry);
-        parseLogFile(logFilePath3, map, totalEntry);
+        parseLogFile(logFilePath1, map);
+        parseLogFile(logFilePath2, map);
+        parseLogFile(logFilePath3, map);
 
         ArrayList<HashMap<String, String>> list = new ArrayList<>(map.values());
         List<TableFormat> entryList = list.stream().map(x -> {
@@ -103,14 +102,14 @@ public class ExcelCreator {
     }
 
 
-    private void parseLogFile(String logFilePath, HashMap<String, HashMap<String, String>> list, TableFormat totalEntry) {
+    private void parseLogFile(String logFilePath, HashMap<String, HashMap<String, String>> list) {
         // 在这里读取a.log文件并解析信息
         // 读取日志文件并提取数据
 
         try (BufferedReader br = new BufferedReader(new FileReader(logFilePath))) {
             String line;
             while ((line = br.readLine()) != null) {
-                LogParser.formatText(line, list, totalEntry);
+                LogParser.formatText(line, list);
             }
         } catch (FileNotFoundException e) {
             log.error("文件不存在：" + logFilePath);
@@ -131,7 +130,7 @@ public class ExcelCreator {
                 return -1;
             }
             // 如果一个元素的name是"总计"，则"总计"排在最后
-            if ("总计".equals(memberId1)) {
+            if ("总计".equals(memberId1)|| StringUtils.isEmpty(memberId1)) {
                 return 1;
             }
 
